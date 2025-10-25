@@ -1,0 +1,69 @@
+name: Hydration Error Detection
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  detect-hydration-issues:
+    name: Detect Hydration Issues
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and check for hydration patterns
+        run: |
+          echo "Checking for common hydration error patterns..."
+
+          # Check for useState with window/document access
+          echo "Checking for useState with browser APIs..."
+          grep -r "useState.*window\|useState.*document" --include="*.tsx" --include="*.ts" app/ components/ || echo "No direct browser API access in useState found"
+
+          # Check for useEffect missing in hooks that use browser APIs
+          echo "Checking hooks that use browser APIs..."
+          FILES=$(find hooks -name "*.ts" -o -name "*.tsx")
+          for file in $FILES; do
+            if grep -q "window\|document\|navigator" "$file"; then
+              if ! grep -q "useEffect" "$file"; then
+                echo "WARNING: $file uses browser APIs but may not have useEffect"
+              fi
+            fi
+          done
+
+          echo "Hydration pattern check complete"
+
+      - name: Build Next.js (detect build-time hydration warnings)
+        run: npm run build 2>&1 | tee build.log
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          SKIP_ENV_VALIDATION: true
+
+      - name: Check for hydration warnings in build
+        run: |
+          if grep -i "hydration\|mismatch" build.log; then
+            echo "⚠️  Hydration warnings detected in build output"
+            exit 1
+          else
+            echo "✅ No hydration warnings detected"
+          fi
+        continue-on-error: true
