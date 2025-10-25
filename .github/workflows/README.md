@@ -64,7 +64,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY # Your Clerk publishable key
 
 ```bash
 # Install Vercel CLI
-npm i -g vercel
+pnpm add -g vercel
 
 # Login to Vercel
 vercel login
@@ -76,6 +76,13 @@ vercel link
 vercel env pull .env.local
 cat .vercel/project.json  # Contains projectId and orgId
 ```
+
+### Note on Package Manager
+
+This project uses **pnpm** instead of npm. The workflows are configured to:
+- Use `pnpm/action-setup@v4` to install pnpm
+- Cache dependencies using `pnpm-lock.yaml`
+- Run `pnpm install --frozen-lockfile` for reproducible builds
 
 ### Optional: Skip Vercel Deployment
 
@@ -128,16 +135,16 @@ Test the build locally before pushing:
 
 ```bash
 # Install dependencies
-npm ci
+pnpm install
 
 # Run type check
-npm run type-check
+pnpm run type-check
 
 # Build the application
-npm run build
+pnpm run build
 
 # Run tests
-npm test
+pnpm test
 ```
 
 ## Contributing
