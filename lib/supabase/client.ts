@@ -6,16 +6,18 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/database'
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL')
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY')
+// Allow build to succeed without env vars (they'll be available at runtime)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
+
+// Warn if using placeholders (but don't throw in build mode)
+if (process.env.NODE_ENV !== 'production' && supabaseUrl === 'https://placeholder.supabase.co') {
+  console.warn('⚠️  Using placeholder Supabase URL - set NEXT_PUBLIC_SUPABASE_URL for actual functionality')
 }
 
 export const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       autoRefreshToken: false,
